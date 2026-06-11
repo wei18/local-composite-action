@@ -1,5 +1,7 @@
 # 📦 local-composite-action
 
+**English** | [繁體中文](README.zh-TW.md)
+
 [![Test](https://github.com/wei18/local-composite-action/actions/workflows/test.yml/badge.svg)](https://github.com/wei18/local-composite-action/actions/workflows/test.yml)
 [![Release](https://img.shields.io/github/v/release/wei18/local-composite-action)](https://github.com/wei18/local-composite-action/releases/latest)
 [![Marketplace](https://img.shields.io/badge/Marketplace-Setup%20Symlink%20for%20Action%20Repository-blue?logo=github)](https://github.com/marketplace/actions/setup-symlink-for-action-repository)
