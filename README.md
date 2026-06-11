@@ -90,6 +90,24 @@ the exact same commit the consumer pinned, with paths matching your repo layout.
 | Version drift | always the consumer's pinned ref | ref must be duplicated and kept in sync |
 | Workspace | untouched | risks clobbering consumer files |
 
+### What about the upcoming `$/` syntax?
+
+GitHub has [proposed a native `$/` syntax](https://github.com/orgs/community/discussions/26245)
+(e.g. `uses: $/path/to/action`) that resolves sibling actions in the **same
+repository at the same SHA**. As of mid-2026 it is still a proposal with no
+release date.
+
+| | local-composite-action | native `$/` (proposed) |
+|---|---|---|
+| Available today | ✅ | not yet shipped |
+| Same-repo sibling actions | ✅ | ✅ once shipped |
+| Cross-repository references | ✅ any repo already under `_actions`* | out of scope |
+
+\* pass that repository's `org/repo` as `action_repository` explicitly.
+
+Once `$/` ships, prefer it for same-repo references — this action remains useful
+for cross-repository layouts, which `$/` explicitly does not cover.
+
 ## 📥 Inputs
 
 | Name                | Description                                                                             | Required |

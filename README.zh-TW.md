@@ -89,6 +89,23 @@ Runner 會把你的 action checkout 到 `_actions/` 底下，而 `uses: ./<path>
 | 版本漂移 | 永遠是使用者釘選的 ref | ref 要重複寫一份並保持同步 |
 | Workspace | 不動 | 有覆蓋使用者檔案的風險 |
 
+### 即將推出的 `$/` 語法呢？
+
+GitHub 已[提案原生的 `$/` 語法](https://github.com/orgs/community/discussions/26245)
+（例如 `uses: $/path/to/action`），可解析**同一個 repository、同一個 SHA** 之下的
+sibling actions。截至 2026 年中，它仍處於提案階段，沒有發布日期。
+
+| | local-composite-action | 原生 `$/`（提案中） |
+|---|---|---|
+| 今天就能用 | ✅ | 尚未推出 |
+| 同 repo 的 sibling actions | ✅ | ✅ 推出後支援 |
+| 跨 repository 引用 | ✅ 任何已在 `_actions` 下的 repo* | 不在範圍內 |
+
+\* 將該 repository 的 `org/repo` 明確傳入 `action_repository` 即可。
+
+`$/` 推出後，同 repo 引用建議改用官方語法 —— 而跨 repository 的情境是 `$/`
+明確不涵蓋的，本 action 在那裡仍然有用。
+
 ## 📥 Inputs
 
 | 名稱                 | 說明                                                                  | 必填 |
