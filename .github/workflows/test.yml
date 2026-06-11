@@ -4,8 +4,15 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: tests/run-tests.sh
+
   test:
     runs-on: ubuntu-latest
     steps:

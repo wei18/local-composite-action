@@ -10,8 +10,9 @@ description: 'Find and create symlink to the action repository path based on the
 
 inputs:
   action_path:
-    description: The path where an action is located.
-    default: ${{ github.action_path }}
+    description: |
+      The path where your composite action is located.
+      Please input the value of GITHUB_ACTION_PATH
   action_repository:
     description: |
       This is the owner and repository name of the action.
@@ -24,7 +25,7 @@ runs:
     - name: Detect existing symlinked action path
       id: check_symlinked
       env:
-        ACTION_PATH: ${{ inputs.action_path }}
+        ACTION_PATH: ${{ inputs.action_path || github.action_path }}
       shell: bash
       run: |
         # -- Detect existing symlinked action path
@@ -40,40 +41,72 @@ runs:
       name: Find action repository directory
       id: action_repository
       env:
-        ACTION_PATH: ${{ inputs.action_path }}
+        ACTION_PATH: ${{ inputs.action_path || github.action_path }}
         ACTION_REPOSITORY: ${{ inputs.action_repository }}
       shell: bash
       run: |
         # -- Find action repository directory
 
-        # Parse the organization and repository from the provided input (composite_action_repository)
+        if [ -z "$ACTION_REPOSITORY" ]; then
+          echo "::error::action_repository is empty. Pass the value of GITHUB_ACTION_REPOSITORY from your composite action. Note: it is empty when an action is referenced by a local path (uses: ./...)."
+          exit 1
+        fi
+
+        # Parse the organization and repository from the provided input (action_repository)
         IFS='/' read -r ORG REPO <<< "$ACTION_REPOSITORY"
         ORG="$(echo "$ORG" | tr '[:upper:]' '[:lower:]')"
         REPO="$(echo "$REPO" | tr '[:upper:]' '[:lower:]')"
 
-        # Convert the current path to lowercase initially to avoid doing it repeatedly in the loop
-        CURRENT="$(echo "$ACTION_PATH" | tr '[:upper:]' '[:lower:]')"
+        if [ -z "$ORG" ] || [ -z "$REPO" ]; then
+          echo "::error::action_repository ($ACTION_REPOSITORY) is not in the form org/repo"
+          exit 1
+        fi
 
-        # Start from the composite action path and check each parent directory
-        while [ "$CURRENT" != "/" ]; do
+        # Start from the composite action path and check each parent directory.
+        # Compare names case-insensitively, but keep the original casing in the
+        # output: the on-disk path follows the casing of the caller's `uses:` line.
+        CURRENT="$ACTION_PATH"
+        while [ -n "$CURRENT" ] && [ "$CURRENT" != "/" ] && [ "$CURRENT" != "." ]; do
           # from path/to/org/repo/hash/to/action/
           # to path/to/org/repo/hash/
-          CURRENT_NAME="$(basename "$CURRENT")"
           PARENT="$(dirname "$CURRENT")"
-          PARENT_NAME="$(basename "$PARENT")"
           GRANDPARENT="$(dirname "$PARENT")"
-          GRANDPARENT_NAME="$(basename "$GRANDPARENT")"
+          PARENT_NAME="$(basename "$PARENT" | tr '[:upper:]' '[:lower:]')"
+          GRANDPARENT_NAME="$(basename "$GRANDPARENT" | tr '[:upper:]' '[:lower:]')"
 
           if [[ "$PARENT_NAME" == "$REPO" && "$GRANDPARENT_NAME" == "$ORG" ]]; then
-            echo "path=$CURRENT" >> $GITHUB_OUTPUT
+            echo "Found action repository at: $CURRENT"
+            echo "path=$CURRENT" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           CURRENT="$PARENT"
         done
 
+        # Fallback: ACTION_PATH may belong to another action (e.g. when action_path
+        # is not passed, github.action_path points at THIS action's own checkout),
+        # so look the repository up under the runner's _actions directory instead.
+        ACTIONS_DIR="$ACTION_PATH"
+        while [ -n "$ACTIONS_DIR" ] && [ "$ACTIONS_DIR" != "/" ] && [ "$ACTIONS_DIR" != "." ]; do
+          ACTIONS_DIR="$(dirname "$ACTIONS_DIR")"
+          if [ "$(basename "$ACTIONS_DIR")" = "_actions" ]; then
+            for REF_DIR in "$ACTIONS_DIR"/*/*/*/; do
+              REF_DIR="${REF_DIR%/}"
+              [ -d "$REF_DIR" ] || continue
+              FOUND_REPO="$(basename "$(dirname "$REF_DIR")" | tr '[:upper:]' '[:lower:]')"
+              FOUND_ORG="$(basename "$(dirname "$(dirname "$REF_DIR")")" | tr '[:upper:]' '[:lower:]')"
+              if [[ "$FOUND_ORG" == "$ORG" && "$FOUND_REPO" == "$REPO" ]]; then
+                echo "Found action repository at: $REF_DIR"
+                echo "path=$REF_DIR" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            done
+            break
+          fi
+        done
+
         # If no match is found, output an error
-        echo "::error::Could not find action repository ($ACTION_REPOSITORY) from path ($ACTION_PATH)"
+        echo "::error::Could not find action repository ($ACTION_REPOSITORY) from path ($ACTION_PATH). If your composite action lives in another repository, also pass the value of GITHUB_ACTION_PATH as action_path."
         exit 1
 
     - if: steps.check_symlinked.outputs.exist != 'true'
@@ -81,13 +114,33 @@ runs:
       env:
         ACTION_REPOSITORY_PATH: ${{ steps.action_repository.outputs.path }}
         ACTION_REPOSITORY: ${{ inputs.action_repository }}
-        SYMLINK_PATH: ${{ format('{0}/../{1}', github.workspace, inputs.action_repository) }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
       shell: bash
       run: |
         # -- Create symlink, forcing overwrite if it exists
-        mkdir -p "$(dirname "$SYMLINK_PATH")"
-        ln -fs "$ACTION_REPOSITORY_PATH" "$SYMLINK_PATH"
-        echo "✅ You can now use it with \`uses: ./../$ACTION_REPOSITORY/path/to/action\`"
+
+        ROOT_DIR="$(dirname "$GITHUB_WORKSPACE")"
+
+        create_symlink() {
+          local SYMLINK_PATH="$1"
+          # Skip when it already resolves to the target; also guards against
+          # replacing the target itself with a self-referencing link.
+          if [ "$(readlink -f "$SYMLINK_PATH" 2>/dev/null)" = "$(readlink -f "$ACTION_REPOSITORY_PATH")" ]; then
+            return 0
+          fi
+          mkdir -p "$(dirname "$SYMLINK_PATH")"
+          # -n: replace an existing symlink instead of creating a link inside it
+          ln -sfn "$ACTION_REPOSITORY_PATH" "$SYMLINK_PATH"
+        }
+
+        create_symlink "$ROOT_DIR/$ACTION_REPOSITORY"
+
+        # Also create an all-lowercase alias, so hardcoded `uses: ./../org/repo/...`
+        # references keep working no matter how the caller's `uses:` line was cased.
+        ACTION_REPOSITORY_LOWER="$(echo "$ACTION_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+        create_symlink "$ROOT_DIR/$ACTION_REPOSITORY_LOWER"
+
+        echo "✅ You can now use it with \`uses: ./../$ACTION_REPOSITORY_LOWER/path/to/action\`"
 
 branding:
   icon: 'arrow-right'

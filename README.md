@@ -22,6 +22,7 @@ runs:
     - uses: wei18/local-composite-action@v1
       with:
         action_repository: ${{ github.action_repository }}
+        action_path: ${{ github.action_path }}
     
     - name: Run local your composite action
       uses: ./../org/repo/.github/composite-actions/example/just-composite-action
@@ -34,15 +35,18 @@ runs:
 > Adjust the relative path based on the symlink location (typically one level above `$GITHUB_WORKSPACE`).
 >
 > This version emphasizes that `./../` is required and clarifies why it needs to be used.
+>
+> Write the `./../org/repo/...` part in all lowercase — a lowercase symlink is always
+> created, regardless of how the caller's `uses:` line is cased.
 
 ---
 
 ## 📥 Inputs
 
-| Name                | Description                                   | Required | Default                   |
-|---------------------|-----------------------------------------------|----------|---------------------------|
-| `action_path`       | The actual path to the composite action       |          | ${{ github.action_path }} |
-| `action_repository` | The repository name in the form of `org/repo` | ✅       |                           |
+| Name                | Description                                                                          | Required | Default                   |
+|---------------------|--------------------------------------------------------------------------------------|----------|---------------------------|
+| `action_path`       | The actual path to your composite action (pass `${{ github.action_path }}`)          | Recommended | falls back to this action's own path |
+| `action_repository` | The repository name in the form of `org/repo` (pass `${{ github.action_repository }}`) | ✅       |                           |
 
 ---
 
