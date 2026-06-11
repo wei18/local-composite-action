@@ -1,3 +1,4 @@
+<!-- 同步提醒：修改此檔案時必須同步更新 README.md（見 CLAUDE.md） -->
 # 📦 local-composite-action
 
 [English](README.md) | **繁體中文**
@@ -6,6 +7,8 @@
 [![Release](https://img.shields.io/github/v/release/wei18/local-composite-action)](https://github.com/wei18/local-composite-action/releases/latest)
 [![Marketplace](https://img.shields.io/badge/Marketplace-Setup%20Symlink%20for%20Action%20Repository-blue?logo=github)](https://github.com/marketplace/actions/setup-symlink-for-action-repository)
 [![License](https://img.shields.io/github/license/wei18/local-composite-action)](LICENSE)
+
+<img src=".github/social-preview.png" alt="用 uses: ./../org/repo 引用同 repo 的 action — 純 bash、不碰 token、不需 permissions、不需額外 checkout" width="100%">
 
 用 `uses: ./../org/repo/...` 引用自己 repo 裡的其他 action —
 即使你的 composite action 是被其他 repo 遠端使用也沒問題。

@@ -1,3 +1,4 @@
+<!-- KEEP IN SYNC: any change to this file must be mirrored in README.zh-TW.md (see CLAUDE.md) -->
 # 📦 local-composite-action
 
 **English** | [繁體中文](README.zh-TW.md)
@@ -6,6 +7,8 @@
 [![Release](https://img.shields.io/github/v/release/wei18/local-composite-action)](https://github.com/wei18/local-composite-action/releases/latest)
 [![Marketplace](https://img.shields.io/badge/Marketplace-Setup%20Symlink%20for%20Action%20Repository-blue?logo=github)](https://github.com/marketplace/actions/setup-symlink-for-action-repository)
 [![License](https://img.shields.io/github/license/wei18/local-composite-action)](LICENSE)
+
+<img src=".github/social-preview.png" alt="Reference sibling actions with uses: ./../org/repo — pure bash, no tokens, no permissions, no extra checkout" width="100%">
 
 Reference sibling actions in your own repository with `uses: ./../org/repo/...` —
 even when your composite action is consumed remotely.
