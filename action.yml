@@ -1,5 +1,5 @@
 name: 'Setup Symlink for Action Repository'
-description: 'Find and create symlink to the action repository path based on the provided inputs.'
+description: 'Reference sibling local actions via uses: ./../org/repo — works when consumed remotely. Pure bash, no tokens, no checkout.'
 
 # ``` example
 # steps:
